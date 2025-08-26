@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LocalConnect</title>
+  <!-- React + ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <!-- Babel for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- TailwindCSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+  <div id="root" class="p-4"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    function App() {
+      const [view, setView] = useState("home");
+      const [vendors, setVendors] = useState([]);
+      const [products, setProducts] = useState([]);
+      const [orders, setOrders] = useState([]);
+
+      useEffect(() => {
+        fetch("http://localhost:4000/vendors").then(r=>r.json()).then(setVendors);
+        fetch("http://localhost:4000/products").then(r=>r.json()).then(setProducts);
+      }, []);
+
+      const addVendor = () => {
+        const name = prompt("Vendor Name:");
+        if(!name) return;
+        fetch("http://localhost:4000/vendors", {
+          method: "POST", headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({ name })
+        }).then(r=>r.json()).then(v=>setVendors([...vendors,v]));
+      };
+
+      const addProduct = () => {
+        const name = prompt("Product Name:");
+        const price = prompt("Price:");
+        if(!name||!price) return;
+        fetch("http://localhost:4000/products", {
+          method: "POST", headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({ name, price })
+        }).then(r=>r.json()).then(p=>setProducts([...products,p]));
+      };
+
+      const placeOrder = (productId) => {
+        fetch("http://localhost:4000/orders", {
+          method: "POST", headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({ productId })
+        }).then(r=>r.json()).then(o=>setOrders([...orders,o]));
+      };
+
+      return (
+        <div>
+          <h1 className="text-2xl font-bold mb-4">LocalConnect</h1>
+          <div className="space-x-2 mb-4">
+            <button onClick={()=>setView("home")} className="bg-blue-500 text-white px-3 py-1 rounded">Home</button>
+            <button onClick={()=>setView("vendors")} className="bg-green-500 text-white px-3 py-1 rounded">Vendors</button>
+            <button onClick={()=>setView("products")} className="bg-purple-500 text-white px-3 py-1 rounded">Products</button>
+            <button onClick={()=>setView("orders")} className="bg-orange-500 text-white px-3 py-1 rounded">Orders</button>
+          </div>
+
+          {view==="home" && <p>Welcome to LocalConnect. Browse local vendors and products!</p>}
+          {view==="vendors" && (
+            <div>
+              <button onClick={addVendor} className="bg-green-600 text-white px-2 py-1 rounded mb-2">+ Add Vendor</button>
+              <ul>{vendors.map(v=><li key={v.id}>{v.name}</li>)}</ul>
+            </div>
+          )}
+          {view==="products" && (
+            <div>
+              <button onClick={addProduct} className="bg-purple-600 text-white px-2 py-1 rounded mb-2">+ Add Product</button>
+              <ul>{products.map(p=>(
+                <li key={p.id} className="flex justify-between">
+                  <span>{p.name} - ${p.price}</span>
+                  <button onClick={()=>placeOrder(p.id)} className="bg-blue-500 text-white px-2 rounded">Order</button>
+                </li>
+              ))}</ul>
+            </div>
+          )}
+          {view==="orders" && (
+            <div>
+              <h2 className="font-bold mb-2">Orders</h2>
+              <ul>{orders.map(o=><li key={o.id}>Order #{o.id} for product {o.productId}</li>)}</ul>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
